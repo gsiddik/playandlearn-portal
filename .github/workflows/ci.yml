@@ -17,7 +17,13 @@ jobs:
       - run: npm ci
       - run: npm run lint:contract
       - run: npm run build
-      - run: npm test
+      - name: Tes API (dengan PostgreSQL)
+        run: |
+          createdb -h localhost -U postgres api_test
+          npm test
+        env:
+          PGPASSWORD: postgres
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/api_test
       - name: Uji isolasi tenant (RLS)
         run: |
           createdb -h localhost -U postgres rls_test
