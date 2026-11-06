@@ -107,7 +107,7 @@ paths:
               required: [loginCode, pin]
               properties:
                 loginCode: { type: string }
-                pin: { type: array, minItems: 3, maxItems: 3, items: { type: integer, minimum: 0, maximum: 8 } }
+                pin: { type: array, minItems: 3, maxItems: 3, description: 'Indeks gambar 0..8; urutan gambar baku: anjing, kucing, ikan, pohon, mobil, apel, bintang, bulan, balon', items: { type: integer, minimum: 0, maximum: 8 } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
         '401': { $ref: '#/components/responses/Error' }

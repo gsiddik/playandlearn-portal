@@ -1,10 +1,13 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { api, ApiError, Child, hasToken, Policy, Progress, setToken } from './api';
+import { api, ApiError, Child, hasToken, Policy, Progress, school, setToken, tokenRole } from './api';
+import { TeacherDashboard } from './school';
 import { AREA_LABEL, homeIdeas, radarPoints, summarize } from './narrative';
 import './style.css';
 
 function Auth({ onDone }: { onDone: () => void }) {
+  const [kind, setKind] = useState<'parent' | 'school'>('parent');
+  const [schoolName, setSchoolName] = useState('');
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [reg, setReg] = useState(false);
@@ -13,18 +16,20 @@ function Auth({ onDone }: { onDone: () => void }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const r = reg ? await api.register(email, pw) : await api.login(email, pw);
+      const r = reg ? (kind === 'school' ? await school.register(schoolName, email, pw) : await api.register(email, pw)) : await api.login(email, pw);
       setToken(r.accessToken);
       onDone();
     } catch (x) { setErr(x instanceof ApiError && x.status === 401 ? 'Email atau password salah' : 'Gagal. Periksa data Anda.'); }
   }
   return (
     <form onSubmit={submit} className="card">
-      <h1>{reg ? 'Daftar orang tua' : 'Masuk orang tua'}</h1>
+      <h1>{reg ? 'Daftar' : 'Masuk'} {kind === 'school' ? 'sekolah/guru' : 'orang tua'}</h1>
+      {reg && <button type="button" className="link" onClick={() => setKind(kind === 'parent' ? 'school' : 'parent')}>{kind === 'parent' ? 'Saya mendaftarkan sekolah' : 'Saya orang tua'}</button>}
+      {reg && kind === 'school' && <label>Nama sekolah<input value={schoolName} onChange={(e) => setSchoolName(e.target.value)} required /></label>}
       <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
       <label>Password (min. 10 karakter)<input type="password" minLength={10} value={pw} onChange={(e) => setPw(e.target.value)} required /></label>
       {reg && <label className="check"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-        Saya orang tua/wali dan menyetujui pengumpulan data minimum untuk progres belajar anak saya (draf kebijakan, menunggu review hukum).</label>}
+        {kind === 'school' ? 'Sekolah menyatakan telah memperoleh persetujuan orang tua/wali murid atas pengumpulan data minimum untuk progres belajar (draf kebijakan, menunggu review hukum).' : 'Saya orang tua/wali dan menyetujui pengumpulan data minimum untuk progres belajar anak saya (draf kebijakan, menunggu review hukum).'}</label>}
       {err && <p className="err">{err}</p>}
       <button disabled={reg && !consent}>{reg ? 'Daftar' : 'Masuk'}</button>
       <button type="button" className="link" onClick={() => setReg(!reg)}>{reg ? 'Sudah punya akun' : 'Buat akun baru'}</button>
@@ -106,6 +111,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 function App() {
   const [authed, setAuthed] = useState(hasToken());
   const logout = useCallback(() => { setToken(null); setAuthed(false); }, []);
-  return authed ? <Dashboard onLogout={logout} /> : <Auth onDone={() => setAuthed(true)} />;
+  if (!authed) return <Auth onDone={() => setAuthed(true)} />;
+  return tokenRole() === 'parent' ? <Dashboard onLogout={logout} /> : <TeacherDashboard onLogout={logout} />;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);

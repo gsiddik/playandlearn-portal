@@ -9,3 +9,8 @@ input { display:block; padding:10px; font-size:16px; min-width:200px; } input[ty
 button { padding:10px 16px; font-size:16px; border:0; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; margin:4px 0; }
 button:disabled { opacity:.5 } button.link { background:none; color:var(--accent); } button.danger { background:#c62828; }
 .err { color:#c62828 } .note { font-size:13px; opacity:.75 }
+
+select, table { font-size:16px } table { width:100%; border-collapse:collapse } td, th { border-bottom:1px solid #8884; padding:6px; text-align:left }
+.cards { display:flex; flex-wrap:wrap; gap:12px } .login-card { border:2px dashed #888; border-radius:12px; padding:8px; text-align:center; width:200px }
+.pin span { font-size:40px; margin:0 4px }
+@media print { body * { visibility:hidden } .cards, .cards * { visibility:visible } .cards { position:absolute; left:0; top:0 } }
