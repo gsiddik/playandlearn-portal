@@ -88,8 +88,17 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [levelsCompletedLast7Days, activities]
+                required: [levelsCompletedLast7Days, activities, areas]
                 properties:
+                  areas:
+                    type: array
+                    description: Lima area dari Dokumen Analisis; hasContent=false bila belum ada aktivitas untuk area tsb
+                    items:
+                      type: object
+                      properties:
+                        area: { type: string, enum: [kognitif, motorik_halus, literasi_bahasa, sosio_emosional, karakter] }
+                        hasContent: { type: boolean }
+                        levelsCompleted: { type: integer }
                   levelsCompletedLast7Days: { type: integer }
                   activities:
                     type: array

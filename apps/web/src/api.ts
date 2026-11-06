@@ -21,7 +21,8 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 
 export interface Child { id: string; alias: string; birthYear: number }
 export interface Policy { dailyMinutes: number; sessionMinutes: number; allowedFrom?: string; allowedTo?: string; version: number }
-export interface Progress { levelsCompletedLast7Days: number; activities: { activityId: string; completed: number; attempts: number; hints: number; highestLevel: number; lastPlayed: string }[] }
+export interface AreaProgress { area: 'kognitif' | 'motorik_halus' | 'literasi_bahasa' | 'sosio_emosional' | 'karakter'; hasContent: boolean; levelsCompleted: number }
+export interface Progress { levelsCompletedLast7Days: number; areas: AreaProgress[]; activities: { activityId: string; completed: number; attempts: number; hints: number; highestLevel: number; lastPlayed: string }[] }
 
 export const api = {
   register: (email: string, password: string) =>

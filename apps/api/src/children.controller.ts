@@ -85,7 +85,21 @@ export class ChildrenController {
       const t = await c.query(
         `SELECT coalesce(sum(CASE WHEN type='completed' THEN 1 ELSE 0 END),0) AS levels_completed
            FROM gameplay_events WHERE child_id=$1 AND device_ts >= now() - interval '7 days'`, [id]);
+      // Area perkembangan dihitung dari pemetaan aktivitas→area di content pack terbit terbaru.
+      const pack = await this.db.pool.query("SELECT manifest FROM content_packs WHERE status='published' ORDER BY version DESC LIMIT 1");
+      const areaOf: Record<string, string[]> = {};
+      for (const a of pack.rows[0]?.manifest?.activities ?? []) areaOf[a.id] = a.areas ?? [];
+      const AREAS = ['kognitif', 'motorik_halus', 'literasi_bahasa', 'sosio_emosional', 'karakter'];
+      const areas = AREAS.map((area) => {
+        const acts = Object.keys(areaOf).filter((k) => areaOf[k].includes(area));
+        return {
+          area,
+          hasContent: acts.length > 0, // false = belum ada aktivitas untuk area ini (bukan berarti anak lemah)
+          levelsCompleted: r.rows.filter((x: any) => acts.includes(x.activity_id)).reduce((n: number, x: any) => n + Number(x.completed), 0),
+        };
+      });
       return {
+        areas,
         levelsCompletedLast7Days: Number(t.rows[0].levels_completed),
         activities: r.rows.map((x: any) => ({
           activityId: x.activity_id, completed: Number(x.completed), attempts: Number(x.attempts),

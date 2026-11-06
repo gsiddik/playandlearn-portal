@@ -7,30 +7,133 @@
       "id": "sort-shapes-color",
       "kind": "sort",
       "title": "Memilah bentuk berdasarkan warna",
-      "curriculum": ["montessori:sensorial", "merdeka:literasi-numerasi-dasar"],
+      "curriculum": [
+        "montessori:sensorial",
+        "merdeka:literasi-numerasi-dasar"
+      ],
       "levels": [
-        { "level": 1, "items": [ {"id":"a","group":"red"}, {"id":"b","group":"blue"} ], "groups": ["red","blue"] },
-        { "level": 2, "items": [ {"id":"a","group":"red"}, {"id":"b","group":"blue"}, {"id":"c","group":"red"}, {"id":"d","group":"blue"} ], "groups": ["red","blue"] }
+        {
+          "level": 1,
+          "items": [
+            {
+              "id": "a",
+              "group": "red"
+            },
+            {
+              "id": "b",
+              "group": "blue"
+            }
+          ],
+          "groups": [
+            "red",
+            "blue"
+          ]
+        },
+        {
+          "level": 2,
+          "items": [
+            {
+              "id": "a",
+              "group": "red"
+            },
+            {
+              "id": "b",
+              "group": "blue"
+            },
+            {
+              "id": "c",
+              "group": "red"
+            },
+            {
+              "id": "d",
+              "group": "blue"
+            }
+          ],
+          "groups": [
+            "red",
+            "blue"
+          ]
+        }
+      ],
+      "areas": [
+        "kognitif",
+        "motorik_halus"
       ]
     },
     {
       "id": "pattern-next",
       "kind": "pattern",
       "title": "Lanjutkan pola",
-      "curriculum": ["merdeka:numerasi-pola"],
+      "curriculum": [
+        "merdeka:numerasi-pola"
+      ],
       "levels": [
-        { "level": 1, "sequence": ["A","B","A","B"], "options": ["A","B","C"], "answer": "A" },
-        { "level": 2, "sequence": ["A","A","B","A","A"], "options": ["A","B","C"], "answer": "B" }
+        {
+          "level": 1,
+          "sequence": [
+            "A",
+            "B",
+            "A",
+            "B"
+          ],
+          "options": [
+            "A",
+            "B",
+            "C"
+          ],
+          "answer": "A"
+        },
+        {
+          "level": 2,
+          "sequence": [
+            "A",
+            "A",
+            "B",
+            "A",
+            "A"
+          ],
+          "options": [
+            "A",
+            "B",
+            "C"
+          ],
+          "answer": "B"
+        }
+      ],
+      "areas": [
+        "kognitif"
       ]
     },
     {
       "id": "count-1-10",
       "kind": "count",
       "title": "Berhitung 1 sampai 10",
-      "curriculum": ["montessori:matematika-dasar", "merdeka:numerasi"],
+      "curriculum": [
+        "montessori:matematika-dasar",
+        "merdeka:numerasi"
+      ],
       "levels": [
-        { "level": 1, "count": 3, "options": [2,3,4] },
-        { "level": 2, "count": 7, "options": [5,7,9] }
+        {
+          "level": 1,
+          "count": 3,
+          "options": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "level": 2,
+          "count": 7,
+          "options": [
+            5,
+            7,
+            9
+          ]
+        }
+      ],
+      "areas": [
+        "kognitif"
       ]
     }
   ]

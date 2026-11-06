@@ -65,6 +65,9 @@ run('alur orang tua → anak → sync (butuh DATABASE_URL)', () => {
     const prog = (await http().get(`/v1/children/${child.id}/progress`).set(auth).expect(200)).body;
     expect(prog.activities[0]).toMatchObject({ activityId: 'count-1-10', completed: 1, highestLevel: 1 });
     expect(prog.levelsCompletedLast7Days).toBe(1);
+    expect(prog.areas).toHaveLength(5);
+    expect(prog.areas.find((a: any) => a.area === 'kognitif')).toMatchObject({ hasContent: true, levelsCompleted: 1 });
+    expect(prog.areas.find((a: any) => a.area === 'karakter')).toMatchObject({ hasContent: false, levelsCompleted: 0 });
     expect((await http().get(`/v1/children/${child.id}/export`).set(auth).expect(200)).body.events).toHaveLength(1);
     await http().delete(`/v1/children/${child.id}`).set(auth).expect(204);
     expect((await http().get('/v1/children').set(auth).expect(200)).body).toHaveLength(0);

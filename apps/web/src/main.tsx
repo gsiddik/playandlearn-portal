@@ -1,7 +1,7 @@
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { api, ApiError, Child, hasToken, Policy, Progress, setToken } from './api';
-import { summarize } from './narrative';
+import { AREA_LABEL, homeIdeas, radarPoints, summarize } from './narrative';
 import './style.css';
 
 function Auth({ onDone }: { onDone: () => void }) {
@@ -32,6 +32,20 @@ function Auth({ onDone }: { onDone: () => void }) {
   );
 }
 
+function Radar({ areas }: { areas: Progress['areas'] }) {
+  const n = areas.length, R = 90, C = 130;
+  const axis = (i: number, f = 1) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [C + Math.cos(a) * R * f, C + Math.sin(a) * R * f]; };
+  return (
+    <svg viewBox="0 0 260 260" role="img" aria-label="Grafik radar lima area perkembangan bermain" style={{ maxWidth: 320 }}>
+      {[0.5, 1].map((f) => <polygon key={f} points={areas.map((_, i) => axis(i, f).join(',')).join(' ')} fill="none" stroke="currentColor" opacity={0.25} />)}
+      {areas.map((a, i) => { const [x, y] = axis(i); const [lx, ly] = axis(i, 1.22); return (
+        <g key={a.area}><line x1={C} y1={C} x2={x} y2={y} stroke="currentColor" opacity={0.25} />
+          <text x={lx} y={ly} fontSize="9" textAnchor="middle" fill="currentColor" opacity={a.hasContent ? 1 : 0.5}>{AREA_LABEL[a.area].split(' (')[0]}{a.hasContent ? '' : ' (segera)'}</text></g>); })}
+      <polygon points={radarPoints(areas, R, C, C)} fill="#1e88e5" fillOpacity={0.35} stroke="#1e88e5" strokeWidth="2" />
+    </svg>
+  );
+}
+
 function ChildPanel({ child, onRemoved }: { child: Child; onRemoved: () => void }) {
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -56,8 +70,9 @@ function ChildPanel({ child, onRemoved }: { child: Child; onRemoved: () => void 
     <section className="card">
       <h2>{child.alias} <small>(lahir {child.birthYear})</small></h2>
       <h3>Perkembangan bermain</h3>
-      {progress ? <ul>{summarize(progress).map((l) => <li key={l}>{l}</li>)}</ul> : <p>Memuat…</p>}
-      <p className="note">Ringkasan ini menggambarkan aktivitas bermain, bukan penilaian atau diagnosis perkembangan anak.</p>
+      {progress ? <><Radar areas={progress.areas} /><ul>{summarize(progress).map((l) => <li key={l}>{l}</li>)}</ul>
+        {homeIdeas(progress).length > 0 && <><h3>Coba di rumah</h3><ul>{homeIdeas(progress).map((l) => <li key={l}>{l}</li>)}</ul></>}</> : <p>Memuat…</p>}
+      <p className="note">Ringkasan ini menggambarkan aktivitas bermain, bukan penilaian atau diagnosis perkembangan anak. Area bertanda (segera) belum memiliki aktivitas.</p>
       <h3>Waktu bermain</h3>
       {policy && (
         <form onSubmit={save}>
