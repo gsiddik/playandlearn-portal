@@ -44,6 +44,76 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
         '401': { $ref: '#/components/responses/Error' }
+  /auth/schools/register:
+    post:
+      summary: Daftar sekolah (tenant) — pendaftar menjadi school_admin dan menyatakan dasar persetujuan orang tua murid
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [schoolName, email, password, parentalConsentAttested]
+              properties:
+                schoolName: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 10 }
+                parentalConsentAttested: { type: boolean }
+      responses:
+        '201': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
+  /school/teachers:
+    post:
+      summary: school_admin menambah akun guru
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [email, password], properties: { email: { type: string }, password: { type: string } } } } } }
+      responses: { '201': { description: Dibuat } }
+  /classes:
+    get: { summary: Daftar kelas (guru), responses: { '200': { description: OK } } }
+    post:
+      summary: Buat kelas (guru)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [name], properties: { name: { type: string } } } } } }
+      responses: { '201': { description: Dibuat } }
+  /classes/{classId}/students:
+    get: { summary: Daftar murid kelas, parameters: [ { $ref: '#/components/parameters/ClassId' } ], responses: { '200': { description: OK } } }
+    post:
+      summary: Tambah murid. Respons memuat kredensial kartu (loginCode + pin 3 indeks gambar 0..8) yang hanya tampil sekali.
+      parameters: [ { $ref: '#/components/parameters/ClassId' } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ChildCreate' } } } }
+      responses: { '201': { description: Dibuat } }
+  /students/{studentId}/reset-pin:
+    post:
+      summary: Terbitkan kartu baru (kode lama dicabut)
+      parameters: [ { name: studentId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { '200': { description: OK } }
+  /classes/{classId}/assignments:
+    get: { summary: Daftar misi yang ditugaskan, parameters: [ { $ref: '#/components/parameters/ClassId' } ], responses: { '200': { description: OK } } }
+    post:
+      summary: Tugaskan aktivitas ke kelas
+      parameters: [ { $ref: '#/components/parameters/ClassId' } ]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [activityId], properties: { activityId: { type: string }, dueDate: { type: string, format: date } } } } } }
+      responses: { '201': { description: OK } }
+  /classes/{classId}/results:
+    get: { summary: Ringkasan bermain per murid (deskriptif), parameters: [ { $ref: '#/components/parameters/ClassId' } ], responses: { '200': { description: OK } } }
+  /auth/students/login:
+    post:
+      summary: Login murid dengan kode QR + PIN gambar. 5 kegagalan mengunci 15 menit (423).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [loginCode, pin]
+              properties:
+                loginCode: { type: string }
+                pin: { type: array, minItems: 3, maxItems: 3, items: { type: integer, minimum: 0, maximum: 8 } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '423': { $ref: '#/components/responses/Error' }
+  /me/profile:
+    get: { summary: Profil murid beserta misi yang ditugaskan (token murid), responses: { '200': { description: OK } } }
   /children:
     get:
       summary: Daftar profil anak milik orang tua
@@ -137,6 +207,7 @@ components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
   parameters:
+    ClassId: { name: classId, in: path, required: true, schema: { type: string, format: uuid } }
     ChildId: { name: childId, in: path, required: true, schema: { type: string, format: uuid } }
   responses:
     Error:

@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",

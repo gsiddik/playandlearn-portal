@@ -35,7 +35,8 @@ export class SyncController {
       const kids = new Set(evs.map((e: any) => e.childId));
       for (const id of kids) {
         const r = await c.query('SELECT parent_id FROM child_profiles WHERE id=$1 AND deleted_at IS NULL', [id]);
-        if (!r.rowCount || r.rows[0].parent_id !== u.sub) throw new NotFoundException('anak tidak ditemukan');
+        const own = u.role === 'student' ? id === u.sub : r.rows[0]?.parent_id === u.sub;
+        if (!r.rowCount || !own) throw new NotFoundException('anak tidak ditemukan');
       }
       let accepted = 0;
       for (const e of evs) {

@@ -12,7 +12,8 @@ const toPolicy = (r: any) => ({
 async function ownChild(c: PoolClient, u: AuthUser, id: string) {
   const r = await c.query('SELECT * FROM child_profiles WHERE id=$1 AND deleted_at IS NULL', [id]);
   if (!r.rowCount) throw new NotFoundException();
-  if (r.rows[0].parent_id !== u.sub) throw new ForbiddenException();
+  const own = u.role === 'student' ? r.rows[0].id === u.sub : r.rows[0].parent_id === u.sub;
+  if (!own) throw new ForbiddenException();
   return r.rows[0];
 }
 function requireParent(u: AuthUser) { if (u.role !== 'parent') throw new ForbiddenException(); }
