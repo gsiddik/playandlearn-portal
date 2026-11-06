@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Play & Learn API
+  version: 0.1.0
+  description: |
+    Kontrak v0 (DRAFT, Increment 0). Sumber kebenaran untuk Android, iOS, dan Portal.
+    Setiap request terautentikasi membawa tenant lewat klaim token; server memverifikasinya (Tenant_ID).
+servers:
+  - url: http://localhost:3000/v1
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Cek kesehatan layanan
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /auth/parents/register:
+    post:
+      summary: Daftar akun orang tua (memerlukan persetujuan eksplisit)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ParentRegistration' }
+      responses:
+        '201': { description: Akun dibuat, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+  /auth/login:
+    post:
+      summary: Login orang tua
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Login' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /children:
+    get:
+      summary: Daftar profil anak milik orang tua
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Child' } } } } }
+    post:
+      summary: Buat profil anak (data minimum)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ChildCreate' } } }
+      responses:
+        '201': { description: Dibuat, content: { application/json: { schema: { $ref: '#/components/schemas/Child' } } } }
+  /children/{childId}:
+    delete:
+      summary: Hapus profil anak beserta datanya (hak hapus)
+      parameters: [ { $ref: '#/components/parameters/ChildId' } ]
+      responses:
+        '204': { description: Dihapus }
+  /children/{childId}/export:
+    get:
+      summary: Ekspor seluruh data anak (hak akses data)
+      parameters: [ { $ref: '#/components/parameters/ChildId' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object } } } }
+  /content/packs/latest:
+    get:
+      summary: Content pack terbitan terbaru yang sesuai usia
+      parameters:
+        - { name: age, in: query, required: true, schema: { type: integer, minimum: 3, maximum: 8 } }
+        - { name: haveVersion, in: query, required: false, schema: { type: integer } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ContentPack' } } } }
+        '304': { description: Sudah terbaru }
+  /children/{childId}/policy:
+    get:
+      summary: Aturan screen time (server authority)
+      parameters: [ { $ref: '#/components/parameters/ChildId' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ScreenTimePolicy' } } } }
+    put:
+      summary: Ubah aturan screen time (hanya orang tua)
+      parameters: [ { $ref: '#/components/parameters/ChildId' } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ScreenTimePolicy' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ScreenTimePolicy' } } } }
+  /sync/events:
+    post:
+      summary: Kirim batch event gameplay (idempoten per event id)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/EventBatch' } } }
+      responses:
+        '200': { description: Hasil, content: { application/json: { schema: { $ref: '#/components/schemas/EventBatchResult' } } } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    ChildId: { name: childId, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    Error:
+      description: Kesalahan
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  schemas:
+    Health: { type: object, required: [status], properties: { status: { type: string, enum: [ok] } } }
+    Error: { type: object, required: [code, message], properties: { code: { type: string }, message: { type: string } } }
+    ParentRegistration:
+      type: object
+      required: [email, password, consentPolicyVersion, consentGranted]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 10 }
+        consentPolicyVersion: { type: string }
+        consentGranted: { type: boolean, description: Harus true }
+    Login: { type: object, required: [email, password], properties: { email: { type: string, format: email }, password: { type: string } } }
+    AuthTokens: { type: object, required: [accessToken, refreshToken], properties: { accessToken: { type: string }, refreshToken: { type: string } } }
+    ChildCreate:
+      type: object
+      required: [alias, birthYear]
+      properties:
+        alias: { type: string, maxLength: 30, description: Nama panggilan/samaran; bukan nama lengkap }
+        birthYear: { type: integer }
+        avatarId: { type: string }
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/ChildCreate'
+        - type: object
+          required: [id, pseudonym]
+          properties: { id: { type: string, format: uuid }, pseudonym: { type: string, format: uuid } }
+    ContentPack:
+      type: object
+      required: [version, manifest]
+      properties: { version: { type: integer }, manifest: { type: object } }
+    ScreenTimePolicy:
+      type: object
+      required: [dailyMinutes, sessionMinutes, version]
+      properties:
+        dailyMinutes: { type: integer, minimum: 5, maximum: 240 }
+        sessionMinutes: { type: integer, minimum: 3, maximum: 60 }
+        allowedFrom: { type: string, example: '07:00' }
+        allowedTo: { type: string, example: '19:00' }
+        version: { type: integer, description: Dinaikkan server; server menang bila konflik }
+    GameplayEvent:
+      type: object
+      required: [id, childId, activityId, contentVersion, type, deviceTs]
+      properties:
+        id: { type: string, format: uuid, description: Dibuat klien; kunci idempotensi }
+        childId: { type: string, format: uuid }
+        activityId: { type: string }
+        contentVersion: { type: integer }
+        type: { type: string, enum: [started, attempt, hint_shown, completed, abandoned] }
+        payload: { type: object }
+        deviceTs: { type: string, format: date-time }
+    EventBatch:
+      type: object
+      required: [events]
+      properties: { events: { type: array, maxItems: 500, items: { $ref: '#/components/schemas/GameplayEvent' } } }
+    EventBatchResult:
+      type: object
+      required: [accepted, duplicates]
+      properties:
+        accepted: { type: integer }
+        duplicates: { type: integer }
+        policy: { $ref: '#/components/schemas/ScreenTimePolicy' }

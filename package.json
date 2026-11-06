@@ -1,0 +1,11 @@
+{
+  "name": "playandlearn-portal",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "lint:contract": "redocly lint contracts/openapi.yaml --skip-rule=operation-4xx-response --skip-rule=no-unused-components",
+    "test": "npm test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": { "@redocly/cli": "1.25.0" }
+}
