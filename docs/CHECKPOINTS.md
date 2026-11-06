@@ -5,3 +5,4 @@ Tag git tidak dapat di-push dari lingkungan pengembangan ini, jadi checkpoint di
 | Checkpoint | Commit | Isi | Status |
 |---|---|---|---|
 | 0 — Fondasi | `fcdb279` | rencana, scaffold, CI, kontrak/skema/privasi (portal) | menunggu review Gunady, ahli PAUD & hukum |
+| 1 — MVP orang tua + anak (Android) | `43ae910` | akun orang tua, profil anak, 3 aktivitas offline, sync, portal orang tua v1 | CI hijau; menunggu uji perangkat nyata + review ahli PAUD/hukum |
