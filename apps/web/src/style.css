@@ -1,0 +1,11 @@
+:root { --bg:#fffaf0; --fg:#222; --accent:#1e88e5; font-family: system-ui, sans-serif; }
+@media (prefers-color-scheme: dark) { :root { --bg:#14161a; --fg:#eee; } }
+body { margin:0; background:var(--bg); color:var(--fg); }
+main, form.card { max-width: 720px; margin: 0 auto; padding: 16px; }
+.card { background: color-mix(in srgb, var(--fg) 6%, transparent); border-radius: 16px; padding: 16px; margin: 16px 0; }
+header { display:flex; justify-content:space-between; align-items:center; }
+label { display:block; margin:8px 0; } label.check { display:flex; gap:8px; }
+input { display:block; padding:10px; font-size:16px; min-width:200px; } input[type=checkbox]{display:inline;min-width:0}
+button { padding:10px 16px; font-size:16px; border:0; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; margin:4px 0; }
+button:disabled { opacity:.5 } button.link { background:none; color:var(--accent); } button.danger { background:#c62828; }
+.err { color:#c62828 } .note { font-size:13px; opacity:.75 }

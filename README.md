@@ -6,6 +6,6 @@ Web Portal (Orang Tua, Sekolah/Guru, Operasional) dan Backend API untuk Play & L
 - Kontrak API (sumber kebenaran untuk Android/iOS/Portal): [contracts/openapi.yaml](contracts/openapi.yaml)
 - Skema DB: `db/migrations/`; uji isolasi tenant: `PGURL=... db/test_rls.sh`
 - API: `apps/api` (NestJS, TypeScript). `npm ci && npm run build && npm test`
-- Portal web (`apps/web`) dimulai pada Increment 1.
+- Portal Orang Tua v1: `apps/web` (React + Vite): `npm run dev -w apps/web`.
 
 Status: Increment 0 (fondasi).

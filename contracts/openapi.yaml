@@ -77,6 +77,31 @@ paths:
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ContentPack' } } } }
         '304': { description: Sudah terbaru }
+  /children/{childId}/progress:
+    get:
+      summary: Ringkasan progres anak untuk dashboard orang tua
+      parameters: [ { $ref: '#/components/parameters/ChildId' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [levelsCompletedLast7Days, activities]
+                properties:
+                  levelsCompletedLast7Days: { type: integer }
+                  activities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        activityId: { type: string }
+                        completed: { type: integer }
+                        attempts: { type: integer }
+                        hints: { type: integer }
+                        highestLevel: { type: integer }
+                        lastPlayed: { type: string, format: date-time }
   /children/{childId}/policy:
     get:
       summary: Aturan screen time (server authority)

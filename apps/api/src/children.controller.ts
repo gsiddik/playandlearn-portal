@@ -68,6 +68,33 @@ export class ChildrenController {
     });
   }
 
+  /** Ringkasan progres untuk dashboard orang tua (agregat dari event; bukan diagnosis). */
+  @Get(':id/progress')
+  progress(@CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    requireParent(u);
+    return this.db.withTenant(u.tenantId, async (c) => {
+      await ownChild(c, u, id);
+      const r = await c.query(
+        `SELECT activity_id,
+                count(*) FILTER (WHERE type='completed') AS completed,
+                count(*) FILTER (WHERE type='attempt') AS attempts,
+                count(*) FILTER (WHERE type='hint_shown') AS hints,
+                max(device_ts) AS last_played,
+                coalesce(max((payload->>'level')::int) FILTER (WHERE type='completed'), 0) AS highest_level
+           FROM gameplay_events WHERE child_id=$1 GROUP BY activity_id ORDER BY activity_id`, [id]);
+      const t = await c.query(
+        `SELECT coalesce(sum(CASE WHEN type='completed' THEN 1 ELSE 0 END),0) AS levels_completed
+           FROM gameplay_events WHERE child_id=$1 AND device_ts >= now() - interval '7 days'`, [id]);
+      return {
+        levelsCompletedLast7Days: Number(t.rows[0].levels_completed),
+        activities: r.rows.map((x: any) => ({
+          activityId: x.activity_id, completed: Number(x.completed), attempts: Number(x.attempts),
+          hints: Number(x.hints), highestLevel: Number(x.highest_level), lastPlayed: x.last_played,
+        })),
+      };
+    });
+  }
+
   @Get(':id/policy')
   policy(@CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.db.withTenant(u.tenantId, async (c) => {
