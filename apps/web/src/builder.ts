@@ -1,7 +1,7 @@
 /** Logika murni penyusun konten (diuji terpisah dari UI). Bentuk manifest sama dengan validator server. */
 export type Kind = 'sort' | 'pattern' | 'count';
 export type Level = Record<string, unknown>;
-export interface Activity { id: string; kind: Kind; title: string; curriculum: string[]; areas: string[]; levels: Level[] }
+export interface Activity { promptAudio?: string; id: string; kind: Kind; title: string; curriculum: string[]; areas: string[]; levels: Level[] }
 export interface Manifest { version: number; minAge: number; maxAge: number; activities: Activity[] }
 
 export const AREAS: { id: string; label: string }[] = [

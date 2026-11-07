@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ApiError, ops, PackRow, SchoolStat, tokenRole } from './api';
+import { ApiError, AssetRow, assets, ops, PackRow, SchoolStat, tokenRole } from './api';
+import { Assets } from './assets';
 import { Builder } from './Builder';
 import { emptyManifest, Manifest } from './builder';
 
@@ -21,7 +22,8 @@ function Content() {
   const [lines, setLines] = useState<string[]>([]);
   const [ok, setOk] = useState('');
   const isAdmin = tokenRole() === 'ops_admin';
-  const load = () => { ops.packs().then(setPacks); };
+  const [audio, setAudio] = useState<AssetRow[]>([]);
+  const load = () => { ops.packs().then(setPacks); assets.list('audio').then(setAudio).catch(() => {}); };
   useEffect(load, []);
 
   async function act(fn: () => Promise<unknown>, done: string) {
@@ -60,7 +62,7 @@ function Content() {
           </p>
         ) : (
           <>
-            <Builder manifest={manifest} onChange={setM} />
+            <Builder manifest={manifest} audio={audio} onChange={setM} />
             <div>
               <button onClick={() => act(async () => { const r = await ops.validate(manifest); if (!r.valid) throw new ApiError(400, JSON.stringify({ errors: r.errors })); }, 'Manifest valid.')}>Validasi</button>{' '}
               <button onClick={() => act(() => ops.saveDraft(manifest), 'Draf disimpan. Terbitkan dari tabel versi (ops_admin).')}>Simpan draf</button>{' '}
@@ -98,13 +100,14 @@ function Schools() {
 }
 
 export function OpsDashboard({ onLogout }: { onLogout: () => void }) {
-  const [tab, setTab] = useState<'konten' | 'sekolah'>('konten');
+  const [tab, setTab] = useState<'konten' | 'aset' | 'sekolah'>('konten');
   return (
     <main>
       <header><h1>Play &amp; Learn — Operasional</h1><button className="link" onClick={onLogout}>Keluar</button></header>
       <nav><button className="link" onClick={() => setTab('konten')}>Konten</button>
+        <button className="link" onClick={() => setTab('aset')}>Aset &amp; suara</button>
         {tokenRole() === 'ops_admin' && <button className="link" onClick={() => setTab('sekolah')}>Sekolah</button>}</nav>
-      {tab === 'konten' ? <Content /> : <Schools />}
+      {tab === 'konten' ? <Content /> : tab === 'aset' ? <Assets /> : <Schools />}
     </main>
   );
 }

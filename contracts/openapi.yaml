@@ -127,6 +127,36 @@ paths:
       responses: { '201': { description: Ditarik } }
   /ops/schools:
     get: { summary: Statistik agregat sekolah (ops_admin; tanpa data anak), responses: { '200': { description: OK } } }
+  /ops/assets:
+    get: { summary: 'Daftar aset (ops_admin, content_designer); filter kind=image|audio', responses: { '200': { description: OK } } }
+    post:
+      summary: 'Unggah berkas atau hasil rekaman browser (base64). Tipe diverifikasi dari isi; gambar maks 2 MB, audio maks 5 MB.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, mime, dataBase64]
+              properties:
+                name: { type: string }
+                purpose: { type: string, enum: [instruksi, umpan_balik, efek, ilustrasi, lainnya] }
+                language: { type: string }
+                transcript: { type: string }
+                mime: { type: string }
+                recorded: { type: boolean }
+                dataBase64: { type: string }
+      responses: { '201': { description: Dibuat }, '400': { $ref: '#/components/responses/Error' } }
+  /ops/assets/{assetId}:
+    patch:
+      summary: Ubah metadata atau arsipkan aset
+      parameters: [ { name: assetId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { '200': { description: OK } }
+  /assets/{assetId}/file:
+    get:
+      summary: Unduh berkas aset aktif (semua pengguna terautentikasi)
+      parameters: [ { name: assetId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { '200': { description: Berkas }, '404': { $ref: '#/components/responses/Error' } }
   /auth/students/login:
     post:
       summary: Login murid dengan kode QR + PIN gambar. 5 kegagalan mengunci 15 menit (423).

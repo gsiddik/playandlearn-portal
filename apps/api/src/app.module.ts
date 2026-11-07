@@ -7,9 +7,10 @@ import { SyncController } from './sync.controller';
 import { SchoolController } from './school.controller';
 import { OpsController } from './ops.controller';
 import { LiveGateway, LiveHub } from './live';
+import { AssetsController } from './assets.controller';
 
 @Module({
-  controllers: [HealthController, AuthController, ChildrenController, SyncController, SchoolController, OpsController],
+  controllers: [HealthController, AuthController, ChildrenController, SyncController, SchoolController, OpsController, AssetsController],
   providers: [Db, LiveHub, LiveGateway],
 })
 export class AppModule {}

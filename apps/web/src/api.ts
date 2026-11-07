@@ -59,6 +59,19 @@ export const ops = {
   schools: () => req<SchoolStat[]>('GET', '/ops/schools'),
 };
 
+export interface AssetRow { id: string; kind: 'image' | 'audio'; purpose: string; name: string; language: string | null; transcript: string | null; mime: string; sizeBytes: number; recorded: boolean; status: string; createdAt: string }
+export const assets = {
+  list: (kind?: 'image' | 'audio') => req<AssetRow[]>('GET', `/ops/assets${kind ? `?kind=${kind}` : ''}`),
+  upload: (a: { name: string; purpose: string; language?: string; transcript?: string; mime: string; recorded?: boolean; dataBase64: string }) => req<AssetRow>('POST', '/ops/assets', a),
+  archive: (id: string) => req<AssetRow>('PATCH', `/ops/assets/${id}`, { status: 'archived' }),
+  /** Berkas butuh token, jadi diambil lewat fetch lalu dijadikan blob URL untuk <audio>/<img>. */
+  blobUrl: async (id: string): Promise<string> => {
+    const r = await fetch(`${BASE}/assets/${id}/file`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) throw new ApiError(r.status, await r.text());
+    return URL.createObjectURL(await r.blob());
+  },
+};
+
 export const school = {
   gradebook: (cid: string) => req<Gradebook>('GET', `/classes/${cid}/gradebook`),
   register: (schoolName: string, email: string, password: string) =>

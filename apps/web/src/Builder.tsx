@@ -45,7 +45,7 @@ function LevelEditor({ kind, level, onChange }: { kind: Kind; level: Level; onCh
   );
 }
 
-function ActivityEditor({ a, onChange, onRemove }: { a: Activity; onChange: (a: Activity) => void; onRemove: () => void }) {
+function ActivityEditor({ a, audio, onChange, onRemove }: { a: Activity; audio: { id: string; name: string }[]; onChange: (a: Activity) => void; onRemove: () => void }) {
   const [tag, setTag] = useState('');
   const toggleArea = (id: string) => onChange({ ...a, areas: a.areas.includes(id) ? a.areas.filter((x) => x !== id) : [...a.areas, id] });
   const addTag = (t: string) => { const v = t.trim(); if (v && !a.curriculum.includes(v)) onChange({ ...a, curriculum: [...a.curriculum, v] }); setTag(''); };
@@ -53,6 +53,10 @@ function ActivityEditor({ a, onChange, onRemove }: { a: Activity; onChange: (a: 
     <section className="card">
       <h3>{KIND_LABEL[a.kind]} <small>({a.id})</small> <button type="button" className="link" onClick={onRemove}>Hapus aktivitas</button></h3>
       <label>Judul (untuk guru/orang tua)<input value={a.title} onChange={(e) => onChange({ ...a, title: e.target.value })} /></label>
+      <label>Audio instruksi (dari pustaka aset, opsional)
+        <select value={a.promptAudio ?? ''} onChange={(e) => onChange({ ...a, promptAudio: e.target.value || undefined })}>
+          <option value="">— suara sintetis bawaan aplikasi —</option>{audio.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+      <p className="note">Aplikasi anak belum memutar audio ini; saat ini hanya disimpan di konten untuk integrasi berikutnya.</p>
       <fieldset><legend>Area perkembangan</legend>
         {AREAS.map((ar) => <label key={ar.id} className="check"><input type="checkbox" checked={a.areas.includes(ar.id)} onChange={() => toggleArea(ar.id)} />{ar.label}</label>)}
       </fieldset>
@@ -77,7 +81,7 @@ function ActivityEditor({ a, onChange, onRemove }: { a: Activity; onChange: (a: 
 }
 
 /** Penyusun konten visual: menghasilkan manifest yang divalidasi server. Jenis permainan baru memerlukan pembaruan aplikasi. */
-export function Builder({ manifest, onChange }: { manifest: Manifest; onChange: (m: Manifest) => void }) {
+export function Builder({ manifest, audio = [], onChange }: { manifest: Manifest; audio?: { id: string; name: string }[]; onChange: (m: Manifest) => void }) {
   const ids = manifest.activities.map((a) => a.id);
   return (
     <div>
@@ -87,7 +91,7 @@ export function Builder({ manifest, onChange }: { manifest: Manifest; onChange: 
         <label>sampai<input type="number" min={3} max={8} value={manifest.maxAge} onChange={(e) => onChange({ ...manifest, maxAge: +e.target.value })} /></label>
       </p>
       {manifest.activities.map((a, i) => (
-        <ActivityEditor key={a.id} a={a}
+        <ActivityEditor key={a.id} a={a} audio={audio}
           onChange={(na) => onChange({ ...manifest, activities: manifest.activities.map((x, j) => (j === i ? na : x)) })}
           onRemove={() => onChange({ ...manifest, activities: manifest.activities.filter((_, j) => j !== i) })} />))}
       <p>Tambah aktivitas:{' '}

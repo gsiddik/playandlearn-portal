@@ -19,3 +19,6 @@ npm run dev -w apps/web                                 # portal di :5173
 ```
 Masuk sebagai ops di portal untuk menyimpan dan menerbitkan content pack (mulai dari `content/packs/v1.json`, salin ke draf).
 Catatan deploy: fungsi SECURITY DEFINER (`auth_lookup`, `student_*`, `ops_school_stats`) harus dimiliki peran BYPASSRLS/superuser.
+
+Dasbor kelas real-time: WebSocket `ws://<host>/v1/live?token=<token guru>` (hub dalam-proses; satu instance server).
+Aset & rekaman suara disimpan di database (MVP); pindah ke object storage setelah hosting ditentukan.

@@ -20,6 +20,7 @@ export function validateManifest(m: any): string[] {
     if (!isStr(a?.title)) errs.push(`${p}.title wajib`);
     if (!Array.isArray(a?.curriculum) || !a.curriculum.every(isStr)) errs.push(`${p}.curriculum harus array string (indikator kurikulum)`);
     if (!Array.isArray(a?.areas) || a.areas.length === 0 || !a.areas.every((x: any) => AREAS.includes(x))) errs.push(`${p}.areas harus berisi minimal satu dari ${AREAS.join(', ')}`);
+    if (a?.promptAudio != null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(a.promptAudio)) errs.push(`${p}.promptAudio harus ID aset (UUID)`);
     if (!Array.isArray(a?.levels) || a.levels.length === 0) { errs.push(`${p}.levels tidak boleh kosong`); return; }
     a.levels.forEach((l: any, j: number) => {
       const q = `${p}.levels[${j}]`;

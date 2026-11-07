@@ -68,6 +68,12 @@ export class OpsController {
     if (!r.rowCount) throw new NotFoundException('hanya draf yang dapat diterbitkan');
     const errors = validateManifest(r.rows[0].manifest);
     if (errors.length) throw new BadRequestException({ message: 'manifest tidak valid', errors });
+    const refs: string[] = (r.rows[0].manifest.activities ?? []).map((a: any) => a.promptAudio).filter(Boolean);
+    if (refs.length) {
+      const found = await this.db.pool.query("SELECT id FROM assets WHERE id = ANY($1::uuid[]) AND status='active' AND kind='audio'", [refs]);
+      const missing = refs.filter((x) => !found.rows.some((f: any) => f.id === x));
+      if (missing.length) throw new BadRequestException({ message: 'aset audio tidak ditemukan/aktif', errors: missing.map((x) => `promptAudio ${x}`) });
+    }
     await this.db.pool.query("UPDATE content_packs SET status='published', published_at=now() WHERE version=$1", [version]);
     await this.audit(u, 'pack.publish', String(version));
     return { version, status: 'published' };
