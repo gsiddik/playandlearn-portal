@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, NotFoundException, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { Db } from './db';
+import { LiveHub } from './live';
 import { AuthGuard, AuthUser, CurrentUser } from './auth';
 
 const TYPES = ['started', 'attempt', 'hint_shown', 'completed', 'abandoned'];
@@ -9,7 +10,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 @Controller()
 @UseGuards(AuthGuard)
 export class SyncController {
-  constructor(private db: Db) {}
+  constructor(private db: Db, private hub: LiveHub) {}
 
   @Get('content/packs/latest')
   async latest(@Query('age') age: string, @Query('haveVersion') have: string | undefined, @Res({ passthrough: true }) res: Response) {
@@ -39,12 +40,27 @@ export class SyncController {
         if (!r.rowCount || !own) throw new NotFoundException('anak tidak ditemukan');
       }
       let accepted = 0;
+      const fresh: any[] = [];
       for (const e of evs) {
         const r = await c.query(
           `INSERT INTO gameplay_events(id,tenant_id,child_id,activity_id,content_version,type,payload,device_ts)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
           [e.id, u.tenantId, e.childId, e.activityId, e.contentVersion, e.type, e.payload ?? {}, e.deviceTs]);
         accepted += r.rowCount ?? 0;
+        if (r.rowCount) fresh.push(e);
+      }
+      // Teruskan ke dasbor guru (hanya murid sekolah, event baru saja; data minimum).
+      if (fresh.length) {
+        const kids = (await c.query('SELECT id, alias, class_id FROM child_profiles WHERE id = ANY($1::uuid[]) AND class_id IS NOT NULL', [[...new Set(fresh.map((e) => e.childId))]])).rows;
+        const byId = new Map(kids.map((k: any) => [k.id, k]));
+        for (const e of fresh) {
+          const k: any = byId.get(e.childId);
+          if (!k) continue;
+          this.hub.publish(u.tenantId, {
+            classId: k.class_id, studentId: k.id, alias: k.alias, activityId: e.activityId, type: e.type,
+            level: Number.isInteger(Number(e.payload?.level)) ? Number(e.payload.level) : null, ts: e.deviceTs,
+          });
+        }
       }
       // Server authority: balas dengan kebijakan terbaru anak pertama bila ada.
       let policy;

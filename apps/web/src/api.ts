@@ -5,6 +5,8 @@ export const setToken = (t: string | null) => {
   token = t;
   t ? sessionStorage.setItem('pal_token', t) : sessionStorage.removeItem('pal_token');
 };
+/** URL WebSocket dasbor real-time (token guru lewat query). */
+export const liveUrl = () => `${BASE.replace(/^http/, 'ws')}/live?token=${encodeURIComponent(token ?? '')}`;
 export const hasToken = () => token !== null;
 
 export class ApiError extends Error { constructor(public status: number, msg: string) { super(msg); } }

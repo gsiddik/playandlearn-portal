@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { WsAdapter } from '@nestjs/platform-ws';
 import request from 'supertest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -24,6 +25,7 @@ run('alur sekolah → kelas → murid → penugasan (butuh DATABASE_URL)', () =>
     const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = mod.createNestApplication();
     app.setGlobalPrefix('v1');
+    app.useWebSocketAdapter(new WsAdapter(app));
     await app.init();
     const db = app.get(Db);
     await db.migrate();

@@ -29,6 +29,15 @@ export function issueTokens(u: AuthUser) {
   };
 }
 
+/** Verifikasi token akses di luar konteks HTTP (mis. WebSocket). Mengembalikan null bila tidak valid. */
+export function verifyAccess(token: string | null | undefined): AuthUser | null {
+  if (!token) return null;
+  try {
+    const p = jwt.verify(token, secret()) as jwt.JwtPayload;
+    return p.typ === 'access' ? { sub: p.sub as string, tenantId: p.tenantId, role: p.role } : null;
+  } catch { return null; }
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {

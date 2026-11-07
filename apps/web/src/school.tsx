@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { ACTIVITY_LABEL, curriculumLabel, HOME_IDEAS, STATUS_LABEL } from './narrative';
-import { Assignment, Card, ClassResults, Gradebook, ClassRow, PIN_ICONS, school, StudentRow } from './api';
+import { applyEvent, isActive, LiveEvent, LiveState, maybeNeedsHelp, peerSuggestions } from './live';
+import { liveUrl, Assignment, Card, ClassResults, Gradebook, ClassRow, PIN_ICONS, school, StudentRow } from './api';
 
 /** Kartu login ramah anak: kode QR + 3 gambar PIN. Dicetak langsung; PIN tidak tersimpan di server (hanya hash). */
 function CardView({ card }: { card: Card }) {
@@ -40,6 +41,47 @@ function Report({ cls, gb, studentId, onClose }: { cls: ClassRow; gb: Gradebook;
       <p className="note">Laporan ini merangkum aktivitas bermain di aplikasi dan bukan penilaian resmi atau diagnosis perkembangan. Aturan pengelompokan telah ditinjau ahli PAUD.</p>
       <p className="noprint"><button onClick={() => window.print()}>Cetak / simpan PDF</button> <button className="link" onClick={onClose}>Tutup</button></p>
     </div>
+  );
+}
+
+/** Dasbor kelas langsung: status murid saat bermain. Hanya menampilkan murid kelas ini. */
+function LiveBoard({ cls, gb }: { cls: ClassRow; gb: Gradebook | null }) {
+  const [state, setState] = useState<LiveState>({});
+  const [conn, setConn] = useState<'menyambung' | 'tersambung' | 'terputus'>('menyambung');
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    let ws: WebSocket | null = null, stop = false, timer: number | undefined;
+    const open = () => {
+      ws = new WebSocket(liveUrl());
+      ws.onopen = () => setConn('tersambung');
+      ws.onmessage = (m) => { const e: LiveEvent = JSON.parse(m.data); if (e.classId === cls.id) setState((s) => applyEvent(s, e)); };
+      ws.onclose = () => { setConn('terputus'); if (!stop) timer = window.setTimeout(open, 3000); };
+    };
+    open();
+    const tick = window.setInterval(() => setNow(Date.now()), 15000);
+    return () => { stop = true; ws?.close(); window.clearTimeout(timer); window.clearInterval(tick); };
+  }, [cls.id]);
+  const rows = Object.values(state).sort((a, b) => a.alias.localeCompare(b.alias));
+  return (
+    <>
+      <h3>Dasbor langsung <small>({conn})</small></h3>
+      {rows.length === 0 ? <p className="note">Belum ada aktivitas. Murid yang bermain dalam keadaan online akan muncul di sini.</p> : (
+        <table>
+          <thead><tr><th>Murid</th><th>Status</th><th>Aktivitas</th><th>Level</th><th>Selesai</th><th></th></tr></thead>
+          <tbody>{rows.map((s) => {
+            const help = maybeNeedsHelp(s, now);
+            const peers = help ? peerSuggestions(s, gb) : [];
+            return (
+              <tr key={s.studentId}>
+                <td>{s.alias}</td><td>{isActive(s, now) ? 'sedang bermain' : 'tidak aktif'}</td>
+                <td>{ACTIVITY_LABEL[s.activityId] ?? s.activityId}</td><td>{s.level ?? '—'}</td><td>{s.completedSession}</td>
+                <td>{help && <>⚠ banyak memakai petunjuk{peers.length > 0 && <> — pertimbangkan dipasangkan dengan {peers.join(', ')}</>}</>}</td>
+              </tr>);
+          })}</tbody>
+        </table>
+      )}
+      <p className="note">Tampilan ini mengandalkan perangkat murid yang sedang online; perangkat offline muncul setelah tersinkron. Sinyal ⚠ hanyalah saran untuk guru.</p>
+    </>
   );
 }
 
@@ -105,6 +147,8 @@ function ClassPanel({ cls }: { cls: ClassRow }) {
         <label>Batas waktu (opsional)<input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></label>
         <button>Tugaskan ke kelas</button>
       </form>
+
+      <LiveBoard cls={cls} gb={gb} />
 
       <h3>Buku nilai deskriptif</h3>
       {gb && (

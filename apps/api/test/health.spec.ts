@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { WsAdapter } from '@nestjs/platform-ws';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
@@ -9,6 +10,7 @@ describe('GET /v1/health', () => {
     const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = mod.createNestApplication();
     app.setGlobalPrefix('v1');
+    app.useWebSocketAdapter(new WsAdapter(app));
     await app.init();
   });
   afterAll(() => app.close());
