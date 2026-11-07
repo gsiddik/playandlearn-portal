@@ -2,6 +2,7 @@ import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { api, ApiError, Child, hasToken, Policy, Progress, school, setToken, tokenRole } from './api';
 import { TeacherDashboard } from './school';
+import { OpsDashboard } from './ops';
 import { AREA_LABEL, homeIdeas, radarPoints, summarize } from './narrative';
 import './style.css';
 
@@ -112,6 +113,8 @@ function App() {
   const [authed, setAuthed] = useState(hasToken());
   const logout = useCallback(() => { setToken(null); setAuthed(false); }, []);
   if (!authed) return <Auth onDone={() => setAuthed(true)} />;
-  return tokenRole() === 'parent' ? <Dashboard onLogout={logout} /> : <TeacherDashboard onLogout={logout} />;
+  const role = tokenRole();
+  if (role === 'ops_admin' || role === 'content_designer') return <OpsDashboard onLogout={logout} />;
+  return role === 'parent' ? <Dashboard onLogout={logout} /> : <TeacherDashboard onLogout={logout} />;
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);

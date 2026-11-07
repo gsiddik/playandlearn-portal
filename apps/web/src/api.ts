@@ -45,6 +45,18 @@ export interface Gradebook {
   students: { studentId: string; alias: string; grades: { activityId: string; status: GradeStatus; highestLevel: number; maxLevel: number; completed: number; hints: number; revealed: number; needsSupportHint: boolean }[] }[];
 }
 
+export interface PackRow { version: number; status: 'draft' | 'staging' | 'published' | 'retired'; minAge: number; maxAge: number; publishedAt: string | null; activityCount: number }
+export interface SchoolStat { id: string; name: string; created_at: string; teachers: number; classes: number; students: number }
+export const ops = {
+  packs: () => req<PackRow[]>('GET', '/ops/packs'),
+  pack: (v: number) => req<{ version: number; status: string; manifest: unknown }>('GET', `/ops/packs/${v}`),
+  validate: (manifest: unknown) => req<{ valid: boolean; errors: string[] }>('POST', '/ops/packs/validate', { manifest }),
+  saveDraft: (manifest: unknown) => req<{ version: number }>('POST', '/ops/packs', { manifest }),
+  publish: (v: number) => req<unknown>('POST', `/ops/packs/${v}/publish`),
+  retire: (v: number) => req<unknown>('POST', `/ops/packs/${v}/retire`),
+  schools: () => req<SchoolStat[]>('GET', '/ops/schools'),
+};
+
 export const school = {
   gradebook: (cid: string) => req<Gradebook>('GET', `/classes/${cid}/gradebook`),
   register: (schoolName: string, email: string, password: string) =>
