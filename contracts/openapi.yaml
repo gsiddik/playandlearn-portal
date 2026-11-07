@@ -100,7 +100,7 @@ paths:
       parameters: [ { $ref: '#/components/parameters/ClassId' } ]
       responses: { '200': { description: OK } }
   /ops/packs:
-    get: { summary: Daftar versi content pack (ops_admin, content_designer), responses: { '200': { description: OK } } }
+    get: { summary: 'Daftar versi content pack (ops_admin, content_designer)', responses: { '200': { description: OK } } }
     post:
       summary: Simpan draf content pack (divalidasi; versi harus naik; versi terbit tidak dapat diubah)
       requestBody: { required: true, content: { application/json: { schema: { type: object, required: [manifest], properties: { manifest: { type: object } } } } } }
