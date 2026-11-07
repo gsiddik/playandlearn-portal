@@ -12,3 +12,4 @@ Tag git tidak dapat di-push dari lingkungan pengembangan ini, jadi checkpoint di
 
 ## Review ahli PAUD
 - 2026-11-07 — `content/packs/v1.json` (3 aktivitas, 2 level) dan aturan buku nilai (`apps/api/src/gradebook.ts`) dinyatakan layak/sesuai dan ambangnya wajar (dilaporkan Gunady; ahli PAUD). Belum ditinjau: saran aktivitas rumah (`HOME_IDEAS`), metode persetujuan orang tua/`docs/PRIVACY.md` (ahli hukum).
+| 6 — Penyusun konten, dasbor real-time, aset | `0eb430e` | penyusun level visual, dasbor kelas WebSocket (sinkron berkala di Android/iOS), pustaka aset + rekam suara di browser | CI hijau; belum diuji manusia; audio aset belum diputar aplikasi anak |
