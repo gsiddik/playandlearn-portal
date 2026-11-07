@@ -70,6 +70,12 @@ run('alur sekolah → kelas → murid → penugasan (butuh DATABASE_URL)', () =>
     const res = (await http().get(`/v1/classes/${cls.id}/results`).set(bearer(t)).expect(200)).body;
     expect(res.students[0].activities[0]).toMatchObject({ activityId: 'count-1-10', completed: 1 });
 
+    const gb = (await http().get(`/v1/classes/${cls.id}/gradebook`).set(bearer(t)).expect(200)).body;
+    expect(gb.rules.length).toBeGreaterThan(0);
+    const g = gb.students[0].grades.find((x: any) => x.activityId === 'count-1-10');
+    expect(g).toMatchObject({ status: 'sedang_berkembang', highestLevel: 1, maxLevel: 2 });
+    expect(gb.activities.find((a: any) => a.activityId === 'count-1-10').curriculum.length).toBeGreaterThan(0);
+
     // reset PIN mencabut kode lama
     const re = (await http().post(`/v1/students/${st.id}/reset-pin`).set(bearer(t)).expect(200)).body;
     await http().post('/v1/auth/students/login').send({ loginCode: st.loginCode, pin: st.pin }).expect(401);

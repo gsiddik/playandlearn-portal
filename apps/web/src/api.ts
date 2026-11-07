@@ -38,7 +38,15 @@ export interface Card { id: string; alias: string; loginCode: string; pin: numbe
 export interface Assignment { id: string; activityId: string; dueDate: string | null }
 export interface ClassResults { students: { studentId: string; alias: string; activities: { activityId: string; completed: number; hints: number; lastPlayed: string }[] }[] }
 
+export type GradeStatus = 'belum_mulai' | 'mulai_dikenalkan' | 'sedang_berkembang' | 'sudah_terbiasa';
+export interface Gradebook {
+  contentVersion: number | null; rules: string[];
+  activities: { activityId: string; curriculum: string[]; areas: string[] }[];
+  students: { studentId: string; alias: string; grades: { activityId: string; status: GradeStatus; highestLevel: number; maxLevel: number; completed: number; hints: number; revealed: number; needsSupportHint: boolean }[] }[];
+}
+
 export const school = {
+  gradebook: (cid: string) => req<Gradebook>('GET', `/classes/${cid}/gradebook`),
   register: (schoolName: string, email: string, password: string) =>
     req<{ accessToken: string }>('POST', '/auth/schools/register', { schoolName, email, password, parentalConsentAttested: true }),
   classes: () => req<ClassRow[]>('GET', '/classes'),

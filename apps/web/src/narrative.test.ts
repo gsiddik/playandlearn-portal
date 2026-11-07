@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { homeIdeas, radarPoints, summarize } from './narrative';
+import { curriculumLabel, homeIdeas, radarPoints, summarize } from './narrative';
 
 describe('summarize', () => {
   it('menangani belum ada data', () => {
@@ -20,5 +20,12 @@ describe('radar & ide rumah', () => {
   it('ide rumah mengikuti aktivitas yang dimainkan', () => {
     const p = { levelsCompletedLast7Days: 1, areas: [], activities: [{ activityId: 'pattern-next', completed: 1, attempts: 1, hints: 0, highestLevel: 1, lastPlayed: '' }] };
     expect(homeIdeas(p)).toHaveLength(1);
+  });
+});
+
+describe('curriculumLabel', () => {
+  it('memanusiakan tag kurikulum', () => {
+    expect(curriculumLabel('montessori:matematika-dasar')).toBe('Montessori — Matematika dasar');
+    expect(curriculumLabel('merdeka:numerasi')).toBe('Kurikulum Merdeka — Numerasi');
   });
 });

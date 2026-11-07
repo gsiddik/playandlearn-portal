@@ -2,6 +2,7 @@ import { BadRequestException, Body, ConflictException, Controller, Delete, Forbi
 import { randomBytes, randomInt, randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { Db } from './db';
+import { gradeActivity, RULES } from './gradebook';
 import { AuthGuard, AuthUser, CurrentUser, hashPassword, issueTokens, verifyPassword } from './auth';
 
 const SCHOOL_POLICY = '2026-11-draft-school';
@@ -194,6 +195,34 @@ export class SchoolController {
         byStudent.set(x.studentId, s);
       }
       return { students: [...byStudent.values()] };
+    });
+  }
+
+  /** Buku nilai deskriptif kelas: status per murid per aktivitas + kaitan indikator kurikulum dari content pack. */
+  @Get('classes/:id/gradebook')
+  @UseGuards(AuthGuard)
+  gradebook(@CurrentUser() u: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
+    staff(u);
+    return this.db.withTenant(u.tenantId, async (c) => {
+      await ownClass(c, id);
+      const pack = (await this.db.pool.query("SELECT version, manifest FROM content_packs WHERE status='published' ORDER BY version DESC LIMIT 1")).rows[0];
+      const acts: any[] = pack?.manifest?.activities ?? [];
+      const students = (await c.query('SELECT id, alias FROM child_profiles WHERE class_id=$1 AND deleted_at IS NULL ORDER BY alias', [id])).rows;
+      const events = (await c.query(
+        `SELECT child_id, activity_id, type, payload FROM gameplay_events
+          WHERE child_id = ANY($1::uuid[])`, [students.map((s: any) => s.id)])).rows;
+      return {
+        contentVersion: pack?.version ?? null,
+        rules: RULES,
+        activities: acts.map((a) => ({ activityId: a.id, curriculum: a.curriculum ?? [], areas: a.areas ?? [] })),
+        students: students.map((s: any) => ({
+          studentId: s.id, alias: s.alias,
+          grades: acts.map((a) => ({
+            activityId: a.id,
+            ...gradeActivity(events.filter((e: any) => e.child_id === s.id && e.activity_id === a.id), (a.levels ?? []).length),
+          })),
+        })),
+      };
     });
   }
 

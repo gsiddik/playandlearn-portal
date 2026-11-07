@@ -50,3 +50,18 @@ export function radarPoints(areas: { levelsCompleted: number; hasContent: boolea
     })
     .join(' ');
 }
+
+export const STATUS_LABEL: Record<string, string> = {
+  belum_mulai: 'Belum mulai',
+  mulai_dikenalkan: 'Mulai dikenalkan',
+  sedang_berkembang: 'Sedang berkembang',
+  sudah_terbiasa: 'Sudah terbiasa',
+};
+
+/** "montessori:matematika-dasar" → "Montessori — Matematika dasar". */
+export function curriculumLabel(tag: string): string {
+  const [fw, topic = ''] = tag.split(':');
+  const f = fw === 'merdeka' ? 'Kurikulum Merdeka' : fw.charAt(0).toUpperCase() + fw.slice(1);
+  const t = topic.replace(/-/g, ' ');
+  return `${f} — ${t.charAt(0).toUpperCase()}${t.slice(1)}`;
+}

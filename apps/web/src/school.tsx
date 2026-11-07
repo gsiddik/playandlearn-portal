@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { ACTIVITY_LABEL } from './narrative';
-import { Assignment, Card, ClassResults, ClassRow, PIN_ICONS, school, StudentRow } from './api';
+import { ACTIVITY_LABEL, curriculumLabel, HOME_IDEAS, STATUS_LABEL } from './narrative';
+import { Assignment, Card, ClassResults, Gradebook, ClassRow, PIN_ICONS, school, StudentRow } from './api';
 
 /** Kartu login ramah anak: kode QR + 3 gambar PIN. Dicetak langsung; PIN tidak tersimpan di server (hanya hash). */
 function CardView({ card }: { card: Card }) {
@@ -16,7 +16,36 @@ function CardView({ card }: { card: Card }) {
   );
 }
 
+/** Laporan perkembangan murid, siap cetak / simpan PDF lewat dialog cetak peramban. */
+function Report({ cls, gb, studentId, onClose }: { cls: ClassRow; gb: Gradebook; studentId: string; onClose: () => void }) {
+  const st = gb.students.find((s) => s.studentId === studentId);
+  if (!st) return null;
+  const played = st.grades.filter((g) => g.status !== 'belum_mulai');
+  return (
+    <div className="report">
+      <h2>Laporan Perkembangan Bermain — {st.alias}</h2>
+      <p>Kelas {cls.name} · dicetak {new Date().toLocaleDateString('id-ID')}</p>
+      {played.length === 0 ? <p>Belum ada aktivitas yang dimainkan.</p> : (
+        <ul>{played.map((g) => {
+          const tags = gb.activities.find((a) => a.activityId === g.activityId)?.curriculum ?? [];
+          return (
+            <li key={g.activityId}>
+              <strong>{ACTIVITY_LABEL[g.activityId] ?? g.activityId}</strong>: {STATUS_LABEL[g.status]} (level tertinggi {g.highestLevel} dari {g.maxLevel}).
+              <br /><small>Terkait: {tags.map(curriculumLabel).join('; ') || '—'}</small>
+              {g.needsSupportHint && <><br /><em>Catatan untuk guru: anak banyak memakai petunjuk; pendampingan singkat mungkin membantu.</em></>}
+              {HOME_IDEAS[g.activityId] && <><br /><small>Coba di rumah: {HOME_IDEAS[g.activityId]}</small></>}
+            </li>);
+        })}</ul>
+      )}
+      <p className="note">Laporan ini merangkum aktivitas bermain di aplikasi dan bukan penilaian resmi atau diagnosis perkembangan. Aturan pengelompokan: draf, menunggu validasi ahli PAUD.</p>
+      <p className="noprint"><button onClick={() => window.print()}>Cetak / simpan PDF</button> <button className="link" onClick={onClose}>Tutup</button></p>
+    </div>
+  );
+}
+
 function ClassPanel({ cls }: { cls: ClassRow }) {
+  const [gb, setGb] = useState<Gradebook | null>(null);
+  const [reportFor, setReportFor] = useState<string | null>(null);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [results, setResults] = useState<ClassResults | null>(null);
@@ -31,6 +60,7 @@ function ClassPanel({ cls }: { cls: ClassRow }) {
     school.students(cls.id).then(setStudents);
     school.assignments(cls.id).then(setAssignments);
     school.results(cls.id).then(setResults);
+    school.gradebook(cls.id).then(setGb);
   };
   useEffect(load, [cls.id]);
 
@@ -75,6 +105,21 @@ function ClassPanel({ cls }: { cls: ClassRow }) {
         <label>Batas waktu (opsional)<input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></label>
         <button>Tugaskan ke kelas</button>
       </form>
+
+      <h3>Buku nilai deskriptif</h3>
+      {gb && (
+        <>
+          <table>
+            <thead><tr><th>Murid</th>{gb.activities.map((a) => <th key={a.activityId}>{ACTIVITY_LABEL[a.activityId] ?? a.activityId}</th>)}<th></th></tr></thead>
+            <tbody>{gb.students.map((s) => (
+              <tr key={s.studentId}><td>{s.alias}</td>
+                {s.grades.map((g) => <td key={g.activityId}>{STATUS_LABEL[g.status]}{g.needsSupportHint ? ' ⚠' : ''}</td>)}
+                <td><button className="link" onClick={() => setReportFor(s.studentId)}>Laporan</button></td></tr>))}</tbody>
+          </table>
+          <details><summary>Cara pengelompokan (draf, menunggu validasi ahli PAUD)</summary><ul>{gb.rules.map((r) => <li key={r}>{r}</li>)}</ul></details>
+          {reportFor && <Report cls={cls} gb={gb} studentId={reportFor} onClose={() => setReportFor(null)} />}
+        </>
+      )}
 
       <h3>Hasil bermain</h3>
       <table>
