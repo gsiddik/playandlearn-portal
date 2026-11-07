@@ -94,6 +94,39 @@ paths:
       responses: { '201': { description: OK } }
   /classes/{classId}/results:
     get: { summary: Ringkasan bermain per murid (deskriptif), parameters: [ { $ref: '#/components/parameters/ClassId' } ], responses: { '200': { description: OK } } }
+  /classes/{classId}/gradebook:
+    get:
+      summary: Buku nilai DESKRIPTIF kelas (status per murid per aktivitas + aturan transparan; draf menunggu validasi ahli PAUD)
+      parameters: [ { $ref: '#/components/parameters/ClassId' } ]
+      responses: { '200': { description: OK } }
+  /ops/packs:
+    get: { summary: Daftar versi content pack (ops_admin, content_designer), responses: { '200': { description: OK } } }
+    post:
+      summary: Simpan draf content pack (divalidasi; versi harus naik; versi terbit tidak dapat diubah)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [manifest], properties: { manifest: { type: object } } } } } }
+      responses: { '201': { description: Draf disimpan }, '400': { $ref: '#/components/responses/Error' }, '409': { $ref: '#/components/responses/Error' } }
+  /ops/packs/validate:
+    post:
+      summary: Validasi manifest tanpa menyimpan
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [manifest], properties: { manifest: { type: object } } } } } }
+      responses: { '201': { description: Hasil validasi } }
+  /ops/packs/{version}:
+    get:
+      summary: Ambil satu versi
+      parameters: [ { name: version, in: path, required: true, schema: { type: integer } } ]
+      responses: { '200': { description: OK } }
+  /ops/packs/{version}/publish:
+    post:
+      summary: Terbitkan draf (ops_admin)
+      parameters: [ { name: version, in: path, required: true, schema: { type: integer } } ]
+      responses: { '201': { description: Terbit } }
+  /ops/packs/{version}/retire:
+    post:
+      summary: Tarik versi terbit (ops_admin)
+      parameters: [ { name: version, in: path, required: true, schema: { type: integer } } ]
+      responses: { '201': { description: Ditarik } }
+  /ops/schools:
+    get: { summary: Statistik agregat sekolah (ops_admin; tanpa data anak), responses: { '200': { description: OK } } }
   /auth/students/login:
     post:
       summary: Login murid dengan kode QR + PIN gambar. 5 kegagalan mengunci 15 menit (423).

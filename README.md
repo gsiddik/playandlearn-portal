@@ -9,3 +9,13 @@ Web Portal (Orang Tua, Sekolah/Guru, Operasional) dan Backend API untuk Play & L
 - Portal Orang Tua v1: `apps/web` (React + Vite): `npm run dev -w apps/web`.
 
 Status: Increment 0 (fondasi).
+
+## Menjalankan lokal
+```
+createdb pal && export DATABASE_URL=postgres://localhost/pal MIGRATE=1 JWT_SECRET=ganti-ini
+export BOOTSTRAP_OPS_EMAIL=ops@contoh.id BOOTSTRAP_OPS_PASSWORD='min-10-karakter'   # akun ops_admin awal
+npm ci && npm run build && npm start -w apps/api        # API di :3000
+npm run dev -w apps/web                                 # portal di :5173
+```
+Masuk sebagai ops di portal untuk menyimpan dan menerbitkan content pack (mulai dari `content/packs/v1.json`, salin ke draf).
+Catatan deploy: fungsi SECURITY DEFINER (`auth_lookup`, `student_*`, `ops_school_stats`) harus dimiliki peran BYPASSRLS/superuser.
