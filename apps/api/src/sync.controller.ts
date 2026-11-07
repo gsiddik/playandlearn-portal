@@ -20,7 +20,15 @@ export class SyncController {
       "SELECT version, manifest FROM content_packs WHERE status='published' AND min_age<=$1 AND max_age>=$1 ORDER BY version DESC LIMIT 1", [a]);
     if (!r.rowCount) throw new NotFoundException('belum ada konten untuk usia ini');
     if (have && Number(have) >= r.rows[0].version) { res.status(304); return; }
-    return r.rows[0];
+    // Aset audio yang dirujuk konten: klien mengunduh sekali, menyimpan offline, dan memutar menggantikan TTS.
+    const refs: string[] = (r.rows[0].manifest.activities ?? []).map((x: any) => x.promptAudio).filter(Boolean);
+    const assets: Record<string, { mime: string; sha256: string; sizeBytes: number }> = {};
+    if (refs.length) {
+      const rows = (await this.db.pool.query(
+        "SELECT id, mime, sha256, size_bytes FROM assets WHERE id = ANY($1::uuid[]) AND status='active' AND kind='audio'", [refs])).rows;
+      for (const a of rows) assets[a.id] = { mime: a.mime, sha256: a.sha256, sizeBytes: a.size_bytes };
+    }
+    return { ...r.rows[0], assets };
   }
 
   @Post('sync/events')

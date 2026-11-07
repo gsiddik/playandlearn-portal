@@ -71,6 +71,24 @@ run('aset & rekaman suara (butuh DATABASE_URL)', () => {
     await http().post('/v1/ops/assets').set(bearer(parent)).send({ name: 'x', mime: 'image/png', dataBase64: png.toString('base64') }).expect(403);
   });
 
+  it('paket konten terbit membawa daftar aset audio untuk klien', async () => {
+    const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WAVE'), Buffer.alloc(40)]);
+    const up = (await http().post('/v1/ops/assets').set(bearer(ops)).send({ name: 'Prompt WAV', purpose: 'instruksi', mime: 'audio/wav', recorded: true, dataBase64: wav.toString('base64') }).expect(201)).body;
+    const base = JSON.parse(readFileSync(join(__dirname, '../../../content/packs/v1.json'), 'utf8'));
+    const max = (await http().get('/v1/ops/packs').set(bearer(ops)).expect(200)).body[0]?.version ?? 0;
+    const m = { ...base, version: max + 1 };
+    m.activities[0].promptAudio = up.id;
+    await http().post('/v1/ops/packs').set(bearer(ops)).send({ manifest: m }).expect(201);
+    await http().post(`/v1/ops/packs/${m.version}/publish`).set(bearer(ops)).expect(201);
+    const parent = (await http().post('/v1/auth/parents/register')
+      .send({ email: `ac${Date.now()}@x.id`, password: 'sandi-panjang-123', consentPolicyVersion: 'v1', consentGranted: true }).expect(201)).body.accessToken;
+    const pack = (await http().get('/v1/content/packs/latest?age=5').set(bearer(parent)).expect(200)).body;
+    expect(pack.version).toBe(m.version);
+    expect(pack.assets[up.id]).toMatchObject({ mime: 'audio/wav', sizeBytes: wav.length });
+    expect(pack.assets[up.id].sha256).toHaveLength(64);
+    await http().post(`/v1/ops/packs/${m.version}/retire`).set(bearer(ops)).expect(201); // kembalikan agar tes lain stabil
+  });
+
   it('konten yang merujuk audio yang tidak ada tidak dapat diterbitkan', async () => {
     const base = JSON.parse(readFileSync(join(__dirname, '../../../content/packs/v1.json'), 'utf8'));
     const max = (await http().get('/v1/ops/packs').set(bearer(ops)).expect(200)).body[0]?.version ?? 0;

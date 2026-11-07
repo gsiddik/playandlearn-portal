@@ -305,7 +305,10 @@ components:
     ContentPack:
       type: object
       required: [version, manifest]
-      properties: { version: { type: integer }, manifest: { type: object } }
+      properties:
+        version: { type: integer }
+        manifest: { type: object }
+        assets: { type: object, description: 'Peta assetId -> {mime, sha256, sizeBytes} untuk audio yang dirujuk aktivitas (promptAudio); klien mengunduh dari /assets/{id}/file', additionalProperties: { type: object } }
     ScreenTimePolicy:
       type: object
       required: [dailyMinutes, sessionMinutes, version]
