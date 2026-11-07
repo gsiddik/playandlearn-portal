@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, AssetRow, assets } from './api';
+import { MAX_SECONDS, TARGET_RATE, concat, downsample, encodeWav } from './wav';
 
 const PURPOSES: Record<string, string> = { instruksi: 'Instruksi suara', umpan_balik: 'Umpan balik', efek: 'Efek suara', ilustrasi: 'Ilustrasi', lainnya: 'Lainnya' };
 
@@ -17,7 +18,7 @@ function Preview({ a }: { a: AssetRow }) {
   return a.kind === 'audio' ? <audio controls src={url} /> : <img src={url} alt={a.name} style={{ maxHeight: 60 }} />;
 }
 
-/** Perekam suara di browser (MediaRecorder). Hasil dapat didengar ulang sebelum disimpan. */
+/** Perekam suara di browser; hasil WAV mono 22,05 kHz 16-bit (dapat diputar di Android & iOS). Maks 90 dtk. */
 function Recorder({ onSaved }: { onSaved: () => void }) {
   const [state, setState] = useState<'diam' | 'merekam' | 'siap'>('diam');
   const [blob, setBlob] = useState<Blob | null>(null);
@@ -26,36 +27,50 @@ function Recorder({ onSaved }: { onSaved: () => void }) {
   const [purpose, setPurpose] = useState('instruksi');
   const [transcript, setTranscript] = useState('');
   const [msg, setMsg] = useState('');
-  const rec = useRef<MediaRecorder | null>(null);
-  const chunks = useRef<Blob[]>([]);
+
+  const ctxRef = useRef<{ ctx: AudioContext; stream: MediaStream; node: ScriptProcessorNode; src: MediaStreamAudioSourceNode } | null>(null);
+  const pcm = useRef<Float32Array[]>([]);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function start() {
     setMsg('');
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { setMsg('Peramban ini tidak mendukung perekaman. Gunakan Chrome/Edge/Firefox terbaru atau unggah berkas.'); return; }
+    if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === 'undefined') { setMsg('Peramban ini tidak mendukung perekaman. Gunakan Chrome/Edge/Firefox terbaru atau unggah berkas.'); return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunks.current = [];
-      mr.ondataavailable = (e) => chunks.current.push(e.data);
-      mr.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const b = new Blob(chunks.current, { type: mr.mimeType || 'audio/webm' });
-        setBlob(b); setPreview(URL.createObjectURL(b)); setState('siap');
-      };
-      rec.current = mr; mr.start(); setState('merekam');
+      const ctx = new AudioContext();
+      const src = ctx.createMediaStreamSource(stream);
+      const node = ctx.createScriptProcessor(4096, 1, 1);
+      pcm.current = [];
+      node.onaudioprocess = (e) => { pcm.current.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+      src.connect(node); node.connect(ctx.destination);
+      ctxRef.current = { ctx, stream, node, src };
+      timer.current = setTimeout(stop, MAX_SECONDS * 1000);
+      setState('merekam');
     } catch { setMsg('Izin mikrofon ditolak atau mikrofon tidak tersedia.'); }
+  }
+  function stop() {
+    const r = ctxRef.current;
+    if (!r) return;
+    if (timer.current) clearTimeout(timer.current);
+    r.node.disconnect(); r.src.disconnect(); r.stream.getTracks().forEach((t) => t.stop());
+    const rate = r.ctx.sampleRate;
+    r.ctx.close().catch(() => {});
+    ctxRef.current = null;
+    const wav = encodeWav(downsample(concat(pcm.current), rate, TARGET_RATE), Math.min(rate, TARGET_RATE));
+    const b = new Blob([wav], { type: 'audio/wav' });
+    setBlob(b); setPreview(URL.createObjectURL(b)); setState('siap');
   }
   async function save() {
     if (!blob) return;
     try {
-      await assets.upload({ name: name.trim(), purpose, language: 'id', transcript: transcript.trim() || undefined, mime: blob.type || 'audio/webm', recorded: true, dataBase64: await toBase64(blob) });
+      await assets.upload({ name: name.trim(), purpose, language: 'id', transcript: transcript.trim() || undefined, mime: 'audio/wav', recorded: true, dataBase64: await toBase64(blob) });
       setState('diam'); setBlob(null); setPreview(''); setName(''); setTranscript(''); setMsg('Rekaman tersimpan.'); onSaved();
     } catch (e) { setMsg(e instanceof ApiError ? `Gagal menyimpan (${e.status}). Maksimum 5 MB.` : 'Gagal menyimpan.'); }
   }
   return (
     <div className="card">
       <h3>Rekam suara</h3>
-      {state !== 'merekam' ? <button onClick={start}>● Mulai rekam</button> : <button onClick={() => rec.current?.stop()}>■ Berhenti</button>}{' '}
+      {state !== 'merekam' ? <button onClick={start}>● Mulai rekam</button> : <button onClick={stop}>■ Berhenti</button>}{' '}
       {state === 'merekam' && <strong>Sedang merekam…</strong>}
       {state === 'siap' && (
         <>
