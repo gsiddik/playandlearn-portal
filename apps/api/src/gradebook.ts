@@ -1,6 +1,6 @@
 /**
  * Buku nilai DESKRIPTIF v1. Aturan sengaja sederhana dan transparan; ini bukan penilaian resmi atau diagnosis.
- * Ambang batas adalah ASUMSI awal dan WAJIB divalidasi ahli PAUD sebelum dipakai di sekolah.
+ * Aturan dan ambang ditinjau ahli PAUD dan dinyatakan wajar (dilaporkan Gunady, 2026-11-07); ubah hanya atas masukan ahli.
  */
 export type Status = 'belum_mulai' | 'mulai_dikenalkan' | 'sedang_berkembang' | 'sudah_terbiasa';
 
@@ -22,7 +22,7 @@ export const RULES = [
   'Mulai dikenalkan: level tertinggi yang selesai kurang dari separuh jumlah level.',
   'Sedang berkembang: sudah menyelesaikan separuh atau lebih level, tetapi belum semua, atau semua level selesai dengan banyak petunjuk.',
   'Sudah terbiasa: semua level selesai dengan rata-rata paling banyak 1 petunjuk per level dan tanpa jawaban yang ditunjukkan.',
-  'Catatan: aturan dan ambang ini draf dan perlu divalidasi ahli PAUD.',
+  'Catatan: aturan dan ambang ini telah ditinjau ahli PAUD dan dinyatakan wajar; tetap bersifat deskriptif, bukan penilaian resmi.',
 ];
 
 const isTrue = (v: unknown) => v === true || v === 1;

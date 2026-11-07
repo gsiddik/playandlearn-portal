@@ -37,7 +37,7 @@ function Report({ cls, gb, studentId, onClose }: { cls: ClassRow; gb: Gradebook;
             </li>);
         })}</ul>
       )}
-      <p className="note">Laporan ini merangkum aktivitas bermain di aplikasi dan bukan penilaian resmi atau diagnosis perkembangan. Aturan pengelompokan: draf, menunggu validasi ahli PAUD.</p>
+      <p className="note">Laporan ini merangkum aktivitas bermain di aplikasi dan bukan penilaian resmi atau diagnosis perkembangan. Aturan pengelompokan telah ditinjau ahli PAUD.</p>
       <p className="noprint"><button onClick={() => window.print()}>Cetak / simpan PDF</button> <button className="link" onClick={onClose}>Tutup</button></p>
     </div>
   );
@@ -116,7 +116,7 @@ function ClassPanel({ cls }: { cls: ClassRow }) {
                 {s.grades.map((g) => <td key={g.activityId}>{STATUS_LABEL[g.status]}{g.needsSupportHint ? ' ⚠' : ''}</td>)}
                 <td><button className="link" onClick={() => setReportFor(s.studentId)}>Laporan</button></td></tr>))}</tbody>
           </table>
-          <details><summary>Cara pengelompokan (draf, menunggu validasi ahli PAUD)</summary><ul>{gb.rules.map((r) => <li key={r}>{r}</li>)}</ul></details>
+          <details><summary>Cara pengelompokan (ditinjau ahli PAUD)</summary><ul>{gb.rules.map((r) => <li key={r}>{r}</li>)}</ul></details>
           {reportFor && <Report cls={cls} gb={gb} studentId={reportFor} onClose={() => setReportFor(null)} />}
         </>
       )}
