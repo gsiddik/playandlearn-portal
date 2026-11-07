@@ -44,5 +44,18 @@ export class Db implements OnModuleDestroy {
     );
   }
 
+  /** Membuat akun ops_admin awal dari lingkungan (BOOTSTRAP_OPS_EMAIL/PASSWORD) bila belum ada. */
+  async bootstrapOps(email = process.env.BOOTSTRAP_OPS_EMAIL, password = process.env.BOOTSTRAP_OPS_PASSWORD) {
+    if (!email || !password || password.length < 10) return false;
+    const { hashPassword } = await import('./auth');
+    if ((await this.pool.query('SELECT 1 FROM auth_lookup($1)', [email])).rowCount) return false;
+    let t = (await this.pool.query("SELECT id FROM tenants WHERE kind='internal' LIMIT 1")).rows[0]?.id;
+    if (!t) t = (await this.pool.query("INSERT INTO tenants(kind,name) VALUES ('internal','Play & Learn Ops') RETURNING id")).rows[0].id;
+    await this.withTenant(t, (c) => c.query("INSERT INTO users(tenant_id,role,email,password_hash) VALUES ($1,'ops_admin',$2,$3)", [t, email.toLowerCase(), '']).then(async () => {
+      await c.query('UPDATE users SET password_hash=$1 WHERE email=$2', [await hashPassword(password), email.toLowerCase()]);
+    }));
+    return true;
+  }
+
   onModuleDestroy() { return this.pool.end(); }
 }
