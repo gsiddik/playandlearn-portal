@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError, ops, PackRow, SchoolStat, tokenRole } from './api';
+import { Builder } from './Builder';
+import { emptyManifest, Manifest } from './builder';
 
 const STATUS: Record<string, string> = { draft: 'Draf', staging: 'Uji', published: 'Terbit', retired: 'Ditarik' };
 
@@ -13,14 +15,15 @@ function errorLines(x: unknown): string[] {
 /** Manajemen konten: editor manifest + validasi server, versi berurutan, konten terbit tidak dapat diubah. */
 function Content() {
   const [packs, setPacks] = useState<PackRow[]>([]);
-  const [text, setText] = useState('');
+  const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [jsonText, setJsonText] = useState('');
+  const setM = (m: Manifest | null) => { setManifest(m); setJsonText(m ? JSON.stringify(m, null, 2) : ''); };
   const [lines, setLines] = useState<string[]>([]);
   const [ok, setOk] = useState('');
   const isAdmin = tokenRole() === 'ops_admin';
   const load = () => { ops.packs().then(setPacks); };
   useEffect(load, []);
 
-  const parse = (): unknown | null => { try { return JSON.parse(text); } catch { setLines(['JSON tidak valid.']); return null; } };
   async function act(fn: () => Promise<unknown>, done: string) {
     setLines([]); setOk('');
     try { await fn(); setOk(done); load(); } catch (e) { setLines(errorLines(e)); }
@@ -28,7 +31,7 @@ function Content() {
   async function openAsNewDraft(v: number) {
     const p = await ops.pack(v);
     const next = Math.max(0, ...packs.map((x) => x.version)) + 1;
-    setText(JSON.stringify({ ...(p.manifest as object), version: next }, null, 2));
+    setM({ ...(p.manifest as Manifest), version: next });
     setLines([]); setOk(`Dimuat dari versi ${v} sebagai draf versi ${next}.`);
   }
 
@@ -49,15 +52,29 @@ function Content() {
         <p className="note">Versi yang sudah terbit tidak dapat diubah; perubahan dibuat sebagai versi baru. Perangkat anak menerima versi terbaru otomatis tanpa pembaruan aplikasi.</p>
       </section>
       <section className="card">
-        <h2>Editor manifest (JSON)</h2>
-        <p className="note">Penyusun visual (no-code) belum tersedia; saat ini manifest disusun sebagai JSON dan divalidasi server. Setiap aktivitas wajib memuat indikator kurikulum dan area perkembangan.</p>
-        <textarea rows={18} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} style={{ width: '100%', fontFamily: 'monospace' }} />
-        <div>
-          <button onClick={() => { const m = parse(); if (m) act(async () => { const r = await ops.validate(m); if (!r.valid) throw new ApiError(400, JSON.stringify({ errors: r.errors })); }, 'Manifest valid.'); }}>Validasi</button>{' '}
-          <button onClick={() => { const m = parse(); if (m) act(() => ops.saveDraft(m), 'Draf disimpan.'); }}>Simpan draf</button>
-        </div>
+        <h2>Penyusun konten</h2>
+        {!manifest ? (
+          <p>
+            <button onClick={() => setM(emptyManifest(Math.max(0, ...packs.map((x) => x.version)) + 1))}>Buat versi baru dari kosong</button>{' '}
+            <span className="note">atau pilih "Salin ke draf baru" pada salah satu versi di atas.</span>
+          </p>
+        ) : (
+          <>
+            <Builder manifest={manifest} onChange={setM} />
+            <div>
+              <button onClick={() => act(async () => { const r = await ops.validate(manifest); if (!r.valid) throw new ApiError(400, JSON.stringify({ errors: r.errors })); }, 'Manifest valid.')}>Validasi</button>{' '}
+              <button onClick={() => act(() => ops.saveDraft(manifest), 'Draf disimpan. Terbitkan dari tabel versi (ops_admin).')}>Simpan draf</button>{' '}
+              <button className="link" onClick={() => setM(null)}>Tutup penyusun</button>
+            </div>
+            <details><summary>JSON lanjutan</summary>
+              <textarea rows={14} value={jsonText} onChange={(e) => setJsonText(e.target.value)} spellCheck={false} style={{ width: '100%', fontFamily: 'monospace' }} />
+              <button onClick={() => { try { setM(JSON.parse(jsonText)); setLines([]); } catch { setLines(['JSON tidak valid.']); } }}>Terapkan JSON ke penyusun</button>
+            </details>
+          </>
+        )}
         {ok && <p>{ok}</p>}
         {lines.length > 0 && <ul className="err">{lines.map((l) => <li key={l}>{l}</li>)}</ul>}
+        <p className="note">Jenis permainan dan bentuk/warna yang tersedia mengikuti aplikasi anak saat ini. Jenis baru memerlukan pembaruan aplikasi.</p>
       </section>
     </>
   );
